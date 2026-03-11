@@ -31,6 +31,10 @@ VAL_ANNOTATIONS  = BASE_DIR / "annotations" / "v2_mscoco_val2014_annotations.jso
 TRAIN_IMAGE_DIR  = BASE_DIR / "image" / "train2014" / "train2014"
 VAL_IMAGE_DIR    = BASE_DIR / "image" / "val2014"   / "val2014"
 
+# Fixed subset cache — all experiments share these exact samples for fair comparison
+FIXED_TRAIN_PATH = BASE_DIR / "fixed_train_subset.json"
+FIXED_VAL_PATH   = BASE_DIR / "fixed_val_subset.json"
+
 # ── Config ────────────────────────────────────────────────────────────────────
 TRAIN_SIZE = 100   # subset size for trial
 VAL_SIZE   = 50
@@ -76,6 +80,55 @@ def get_image_path(image_id: int, split: str) -> Path:
         return TRAIN_IMAGE_DIR / f"COCO_train2014_{image_id:012d}.jpg"
     else:
         return VAL_IMAGE_DIR   / f"COCO_val2014_{image_id:012d}.jpg"
+
+
+# ── Fixed subset helpers ───────────────────────────────────────────────────────
+def get_fixed_val_subset() -> list[dict]:
+    """
+    Return the fixed 50-sample val subset used by ALL experiments.
+    Creates and saves fixed_val_subset.json on first call,
+    then loads from it on every subsequent call — guaranteeing all
+    experiments (baseline, LoRA, Adapters, IA3) test on the same images.
+    """
+    if FIXED_VAL_PATH.exists():
+        print(f"  [Fixed val] Loading cached subset from {FIXED_VAL_PATH.name}")
+        with open(FIXED_VAL_PATH) as f:
+            return json.load(f)
+
+    print("  [Fixed val] Creating fixed val subset for the first time...")
+    import random
+    random.seed(SEED)
+    samples = build_samples(VAL_QUESTIONS, VAL_ANNOTATIONS)
+    samples = [s for s in samples if get_image_path(s["image_id"], "val").exists()]
+    random.shuffle(samples)
+    subset  = samples[:VAL_SIZE]
+    with open(FIXED_VAL_PATH, "w") as f:
+        json.dump(subset, f, indent=2)
+    print(f"  [Fixed val] Saved {len(subset)} samples → {FIXED_VAL_PATH.name}")
+    return subset
+
+
+def get_fixed_train_subset() -> list[dict]:
+    """
+    Return the fixed 100-sample train subset used by ALL PEFT experiments.
+    Creates and saves fixed_train_subset.json on first call.
+    """
+    if FIXED_TRAIN_PATH.exists():
+        print(f"  [Fixed train] Loading cached subset from {FIXED_TRAIN_PATH.name}")
+        with open(FIXED_TRAIN_PATH) as f:
+            return json.load(f)
+
+    print("  [Fixed train] Creating fixed train subset for the first time...")
+    import random
+    random.seed(SEED)
+    samples = build_samples(TRAIN_QUESTIONS, TRAIN_ANNOTATIONS)
+    samples = [s for s in samples if get_image_path(s["image_id"], "train").exists()]
+    random.shuffle(samples)
+    subset  = samples[:TRAIN_SIZE]
+    with open(FIXED_TRAIN_PATH, "w") as f:
+        json.dump(subset, f, indent=2)
+    print(f"  [Fixed train] Saved {len(subset)} samples → {FIXED_TRAIN_PATH.name}")
+    return subset
 
 
 # ── PyTorch Dataset ────────────────────────────────────────────────────────────

@@ -1,0 +1,9 @@
+venv\Scripts\python.exe baseline.py
+
+venv\Scripts\python.exe lora.py
+
+venv\Scripts\python.exe adapters.py
+
+venv\Scripts\python.exe ia3.py
+
+venv\Scripts\python.exe evaluate.py

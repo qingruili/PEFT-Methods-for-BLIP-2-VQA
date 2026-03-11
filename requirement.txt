@@ -19,6 +19,7 @@ ipykernel
 
 pillow
 opencv-python
+psutil
 
 peft
 bitsandbytes
