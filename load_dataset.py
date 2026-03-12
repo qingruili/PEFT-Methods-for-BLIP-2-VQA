@@ -36,7 +36,7 @@ FIXED_TRAIN_PATH = BASE_DIR / "fixed_train_subset.json"
 FIXED_VAL_PATH   = BASE_DIR / "fixed_val_subset.json"
 
 # ── Config ────────────────────────────────────────────────────────────────────
-TRAIN_SIZE = 100   # subset size for trial
+TRAIN_SIZE = 50000  # fixed train subset size shared across all PEFT experiments
 VAL_SIZE   = 50
 SEED       = 42
 # ──────────────────────────────────────────────────────────────────────────────

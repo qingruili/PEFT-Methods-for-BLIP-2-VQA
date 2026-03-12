@@ -46,11 +46,19 @@ def normalize_answer(ans: str) -> str:
       1. Take only the first sentence / clause (split on . , ; newline)
       2. Lowercase and strip punctuation
     """
-    # Take first sentence or clause only
+    # Step 1: take first clause (split on punctuation)
     ans = re.split(r"[.,;\n]", ans)[0]
     ans = ans.lower().strip()
     ans = re.sub(r"[^\w\s]", "", ans)   # remove remaining punctuation
     ans = re.sub(r"\s+", " ", ans).strip()
+    # Step 2: handle word repetition — "yes yes yes yes" → "yes"
+    words = ans.split()
+    if words and all(w == words[0] for w in words):
+        ans = words[0]
+    # Step 3: if answer starts with a number, take just the number
+    # e.g. "0 people are in the photo" → "0"
+    if words and words[0].isdigit():
+        ans = words[0]
     return ans
 
 

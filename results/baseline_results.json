@@ -1,13 +1,13 @@
 {
-  "method": "lora",
-  "accuracy": 55.333333333333336,
-  "avg_time_ms": 4960.299365999672,
+  "method": "baseline",
+  "accuracy": 36.666666666666664,
+  "avg_time_ms": 8108.811305999989,
   "num_samples": 50,
   "predictions": [
     {
       "question_id": 404839002,
       "question": "What color shirt is the person with the extended arm wearing?",
-      "prediction": "pink. Question: what color are the other people",
+      "prediction": "The person with the extended arm is wearing a pink",
       "gt_answer": "gray",
       "all_answers": [
         "white",
@@ -26,7 +26,7 @@
     {
       "question_id": 31980005,
       "question": "What are the black things on the pizza?",
-      "prediction": "pepperoni. Question: what color is the pepper",
+      "prediction": "Pizza toppings",
       "gt_answer": "olives",
       "all_answers": [
         "burn marks",
@@ -45,7 +45,7 @@
     {
       "question_id": 473994000,
       "question": "Is the dog on a leash?",
-      "prediction": "no",
+      "prediction": "No, the dog is not on a leash",
       "gt_answer": "yes",
       "all_answers": [
         "no",
@@ -64,7 +64,7 @@
     {
       "question_id": 29838012,
       "question": "Is that a pizza?",
-      "prediction": "no. Question: what is on the plate?",
+      "prediction": "No, it's a plate of food",
       "gt_answer": "no",
       "all_answers": [
         "no",
@@ -83,7 +83,7 @@
     {
       "question_id": 367195001,
       "question": "What color is the slippers?",
-      "prediction": "blue and white",
+      "prediction": "The slippers are brown and white",
       "gt_answer": "black",
       "all_answers": [
         "black",
@@ -102,7 +102,7 @@
     {
       "question_id": 159170001,
       "question": "Is this animal a zebra?",
-      "prediction": "no",
+      "prediction": "No, it's an orange tabby cat",
       "gt_answer": "no",
       "all_answers": [
         "no",
@@ -121,7 +121,7 @@
     {
       "question_id": 6074009,
       "question": "What is written on the side of the truck?",
-      "prediction": "christmas. Question: what is in the back",
+      "prediction": "It's a christmas tree",
       "gt_answer": "state farm",
       "all_answers": [
         "blue",
@@ -140,7 +140,7 @@
     {
       "question_id": 44699003,
       "question": "Do the animals have horns?",
-      "prediction": "no",
+      "prediction": "No",
       "gt_answer": "no",
       "all_answers": [
         "0",
@@ -159,7 +159,7 @@
     {
       "question_id": 218012001,
       "question": "What is the white stuff on the donuts?",
-      "prediction": "powdered sugar",
+      "prediction": "It's powdered sugar",
       "gt_answer": "powdered sugar",
       "all_answers": [
         "powdered sugar",
@@ -173,12 +173,12 @@
         "powdered sugar",
         "powdered sugar"
       ],
-      "score": 1.0
+      "score": 0.0
     },
     {
       "question_id": 440461002,
       "question": "How many feet do you need to keep back?",
-      "prediction": "2 feet. Question: how many people are in",
+      "prediction": "As many as you can get away with",
       "gt_answer": "50",
       "all_answers": [
         "12",
@@ -197,7 +197,7 @@
     {
       "question_id": 70480002,
       "question": "Are the stands crowded?",
-      "prediction": "yes. Question: are there people sitting in the",
+      "prediction": "Yes",
       "gt_answer": "no",
       "all_answers": [
         "no",
@@ -216,7 +216,7 @@
     {
       "question_id": 322307002,
       "question": "What color are these rocks?",
-      "prediction": "black and white",
+      "prediction": "They are gray",
       "gt_answer": "brown",
       "all_answers": [
         "sand",
@@ -235,7 +235,7 @@
     {
       "question_id": 561578002,
       "question": "Are there clouds in the sky?",
-      "prediction": "no. Question: is this a sunny day?",
+      "prediction": "No, there are no clouds in the sky",
       "gt_answer": "no",
       "all_answers": [
         "no",
@@ -254,7 +254,7 @@
     {
       "question_id": 397322002,
       "question": "Are there any books in this room?",
-      "prediction": "yes",
+      "prediction": "No, there are no books in this room",
       "gt_answer": "no",
       "all_answers": [
         "no",
@@ -268,12 +268,12 @@
         "no",
         "no"
       ],
-      "score": 0.0
+      "score": 1.0
     },
     {
       "question_id": 126671002,
       "question": "Is the bathroom clean?",
-      "prediction": "yes. Question: is the shower curtain up?",
+      "prediction": "Yes, the bathroom is clean",
       "gt_answer": "yes",
       "all_answers": [
         "yes",
@@ -292,7 +292,7 @@
     {
       "question_id": 120199001,
       "question": "Is this in the oven?",
-      "prediction": "no",
+      "prediction": "Yes, it is in the oven",
       "gt_answer": "no",
       "all_answers": [
         "no",
@@ -306,12 +306,12 @@
         "no",
         "no"
       ],
-      "score": 1.0
+      "score": 0.6666666666666666
     },
     {
       "question_id": 564868002,
       "question": "Is the man happy?",
-      "prediction": "yes. Question: is he holding a controller?",
+      "prediction": "Yes, the man is happy",
       "gt_answer": "yes",
       "all_answers": [
         "yes",
@@ -330,7 +330,7 @@
     {
       "question_id": 119445000,
       "question": "How many people are standing?",
-      "prediction": "3 people. Question: how many balls are in",
+      "prediction": "None",
       "gt_answer": "1",
       "all_answers": [
         "2",
@@ -344,12 +344,12 @@
         "2",
         "1"
       ],
-      "score": 0.3333333333333333
+      "score": 0.0
     },
     {
       "question_id": 485909020,
       "question": "How many shirts does the guy in blue have on?",
-      "prediction": "1. Question: what color is his shirt?",
+      "prediction": "None.",
       "gt_answer": "2",
       "all_answers": [
         "2",
@@ -368,7 +368,7 @@
     {
       "question_id": 51119005,
       "question": "What kind of tree is that?",
-      "prediction": "pine tree. Question: what color is it?",
+      "prediction": "It's a birch tree",
       "gt_answer": "pine",
       "all_answers": [
         "pine",
@@ -387,7 +387,7 @@
     {
       "question_id": 302643001,
       "question": "Is this sandwich toasted?",
-      "prediction": "no",
+      "prediction": "No, it is not toasted",
       "gt_answer": "no",
       "all_answers": [
         "no",
@@ -406,7 +406,7 @@
     {
       "question_id": 445569000,
       "question": "What is the structure in the back?",
-      "prediction": "hut. Question: what is on the ground?",
+      "prediction": "It's an elephant pen",
       "gt_answer": "hut",
       "all_answers": [
         "hut",
@@ -420,12 +420,12 @@
         "mountain",
         "shack"
       ],
-      "score": 1.0
+      "score": 0.0
     },
     {
       "question_id": 311374006,
       "question": "What is the person eating?",
-      "prediction": "hot dogs and french fries. Question: what is",
+      "prediction": "Hot dogs and french fries",
       "gt_answer": "hot dog",
       "all_answers": [
         "hot dog",
@@ -444,7 +444,7 @@
     {
       "question_id": 249246000,
       "question": "How many men are standing up on their surfboards?",
-      "prediction": "3. Question: how many people are in the",
+      "prediction": "All of them",
       "gt_answer": "1",
       "all_answers": [
         "1",
@@ -482,7 +482,7 @@
     {
       "question_id": 527906003,
       "question": "What is in the vase?",
-      "prediction": "flowers. Question: what is on the table?",
+      "prediction": "A cup of coffee and a sandwich on a plate",
       "gt_answer": "plant",
       "all_answers": [
         "candle",
@@ -501,7 +501,7 @@
     {
       "question_id": 472881000,
       "question": "How many tracks are shown?",
-      "prediction": "2. Question: how many cars are in the",
+      "prediction": "2",
       "gt_answer": "2",
       "all_answers": [
         "2",
@@ -520,7 +520,7 @@
     {
       "question_id": 166287004,
       "question": "What are the things eating on the ground?",
-      "prediction": "grass. Question: what is in the water?",
+      "prediction": "Birds",
       "gt_answer": "birds",
       "all_answers": [
         "birds",
@@ -534,12 +534,12 @@
         "grass",
         "grass"
       ],
-      "score": 0.6666666666666666
+      "score": 1.0
     },
     {
       "question_id": 332318011,
       "question": "Are the cows moving at the same speed as the cars?",
-      "prediction": "no",
+      "prediction": "Yes, the cows are moving at the same speed",
       "gt_answer": "no",
       "all_answers": [
         "no",
@@ -553,12 +553,12 @@
         "no",
         "no"
       ],
-      "score": 1.0
+      "score": 0.0
     },
     {
       "question_id": 192128005,
       "question": "What direction is the car facing?",
-      "prediction": "left. Question: what is on the back of",
+      "prediction": "North",
       "gt_answer": "left",
       "all_answers": [
         "left",
@@ -572,12 +572,12 @@
         "left",
         "left"
       ],
-      "score": 1.0
+      "score": 0.0
     },
     {
       "question_id": 171880002,
       "question": "What is the man throwing?",
-      "prediction": "frisbee",
+      "prediction": "A frisbee",
       "gt_answer": "frisbee",
       "all_answers": [
         "frisbee",
@@ -591,12 +591,12 @@
         "disk",
         "frisbee"
       ],
-      "score": 1.0
+      "score": 0.0
     },
     {
       "question_id": 333772000,
       "question": "Is the cat going to eat the mouse?",
-      "prediction": "no",
+      "prediction": "Yes, the cat is going to eat the mouse",
       "gt_answer": "no",
       "all_answers": [
         "no",
@@ -610,12 +610,12 @@
         "no",
         "no"
       ],
-      "score": 1.0
+      "score": 0.0
     },
     {
       "question_id": 118507003,
       "question": "How many people are in the photo?",
-      "prediction": "one. Question: how many doors are open?",
+      "prediction": "None",
       "gt_answer": "0",
       "all_answers": [
         "0",
@@ -634,7 +634,7 @@
     {
       "question_id": 246540001,
       "question": "Is this a birthday cake?",
-      "prediction": "yes it is. Question: what is on the",
+      "prediction": "Yes, it is a birthday cake",
       "gt_answer": "yes",
       "all_answers": [
         "no",
@@ -648,12 +648,12 @@
         "yes",
         "yes"
       ],
-      "score": 0.0
+      "score": 1.0
     },
     {
       "question_id": 243464002,
       "question": "What color streaks are in the woman's hair?",
-      "prediction": "red. Question: what color is the man's",
+      "prediction": "brown",
       "gt_answer": "red",
       "all_answers": [
         "pink",
@@ -667,12 +667,12 @@
         "red",
         "red"
       ],
-      "score": 1.0
+      "score": 0.0
     },
     {
       "question_id": 538497000,
       "question": "What kind of room is this?",
-      "prediction": "bathroom. Question: what is on the wall?",
+      "prediction": "It's a bathroom",
       "gt_answer": "bathroom",
       "all_answers": [
         "bathroom",
@@ -686,12 +686,12 @@
         "men's bathroom",
         "bathroom"
       ],
-      "score": 1.0
+      "score": 0.0
     },
     {
       "question_id": 314935004,
       "question": "Which computer looks nicer?",
-      "prediction": "laptop",
+      "prediction": "The one on the left",
       "gt_answer": "mac",
       "all_answers": [
         "desktop",
@@ -710,7 +710,7 @@
     {
       "question_id": 529004000,
       "question": "Where are the animals?",
-      "prediction": "road. Question: why are they on the road",
+      "prediction": "On the side of the road",
       "gt_answer": "around car",
       "all_answers": [
         "by vehicle",
@@ -729,7 +729,7 @@
     {
       "question_id": 505099003,
       "question": "What number is on the man's jersey?",
-      "prediction": "3. Question: what is the color of the",
+      "prediction": "1",
       "gt_answer": "25",
       "all_answers": [
         "25",
@@ -767,7 +767,7 @@
     {
       "question_id": 171351001,
       "question": "Can you see a garage door in this picture?",
-      "prediction": "no",
+      "prediction": "Yes, you can see a garage door in this",
       "gt_answer": "no",
       "all_answers": [
         "no",
@@ -781,12 +781,12 @@
         "no",
         "no"
       ],
-      "score": 1.0
+      "score": 0.0
     },
     {
       "question_id": 241318001,
       "question": "What color is the woman in the middles shirt?",
-      "prediction": "blue. Question: what kind of shoes is she",
+      "prediction": "She is wearing a light blue shirt",
       "gt_answer": "blue",
       "all_answers": [
         "white",
@@ -800,12 +800,12 @@
         "blue",
         "blue"
       ],
-      "score": 1.0
+      "score": 0.0
     },
     {
       "question_id": 416968005,
       "question": "Is this an intersection?",
-      "prediction": "no. Question: is this a parking lot?",
+      "prediction": "No, it's a parking lot",
       "gt_answer": "no",
       "all_answers": [
         "no",
@@ -824,7 +824,7 @@
     {
       "question_id": 397639008,
       "question": "Are they chasing each other?",
-      "prediction": "no",
+      "prediction": "No, they are not chasing each other",
       "gt_answer": "no",
       "all_answers": [
         "no",
@@ -843,7 +843,7 @@
     {
       "question_id": 27371007,
       "question": "What is this woman doing?",
-      "prediction": "walking down the street with a suitcase. Question:",
+      "prediction": "Pulling a suitcase down the street",
       "gt_answer": "walking",
       "all_answers": [
         "pulling suitcase down sidewalk",
@@ -862,7 +862,7 @@
     {
       "question_id": 128679000,
       "question": "Was the picture taken with flash?",
-      "prediction": "no",
+      "prediction": "No, it was taken with a camera.",
       "gt_answer": "no",
       "all_answers": [
         "no",
@@ -881,7 +881,7 @@
     {
       "question_id": 328890002,
       "question": "What fruit is on the pizza?",
-      "prediction": "pineapple. Question: what kind of pizza is this",
+      "prediction": "Pineapple",
       "gt_answer": "pineapple",
       "all_answers": [
         "pineapple",
@@ -900,7 +900,7 @@
     {
       "question_id": 416968004,
       "question": "What season of the year is it?",
-      "prediction": "summer. Question: what is the weather like?",
+      "prediction": "Winter",
       "gt_answer": "summer",
       "all_answers": [
         "summer",
@@ -914,12 +914,12 @@
         "summer",
         "spring or summer"
       ],
-      "score": 1.0
+      "score": 0.0
     },
     {
       "question_id": 249158001,
       "question": "What are the consequences of stopping in this particular no stopping zone?",
-      "prediction": "you will be ticketed. Question: what is",
+      "prediction": "There are no consequences of stopping in this particular no",
       "gt_answer": "tow-away",
       "all_answers": [
         "lanes change",
@@ -938,7 +938,7 @@
     {
       "question_id": 42288011,
       "question": "What winter sport is he engaged in?",
-      "prediction": "frisbee golf. Question: what is the",
+      "prediction": "Freeskiing",
       "gt_answer": "frisbee",
       "all_answers": [
         "frisbee",

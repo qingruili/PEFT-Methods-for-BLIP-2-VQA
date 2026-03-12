@@ -1,18 +1,8 @@
 """
-Evaluate saved checkpoints on the fixed val dataset.
-
-Loads each method's checkpoint, runs inference, scores against ground truth,
-and saves per-sample predictions + accuracy to results/<method>_results.json.
-
-Usage:
-  python evaluate.py                  # evaluate all available checkpoints
-  python evaluate.py lora             # evaluate one method
-  python evaluate.py lora ia3         # evaluate specific methods
-
-Available methods: lora, adapters, ia3
+Shared utilities for all evaluate_*.py scripts.
+Handles model loading, inference, scoring, and result I/O.
 """
 
-import sys
 import json
 import re
 import time
@@ -28,7 +18,7 @@ from peft import PeftModel, prepare_model_for_kbit_training
 from load_dataset import VQAv2Dataset, get_fixed_val_subset
 
 
-# ── Config ────────────────────────────────────────────────────────────────────
+# ── Constants ─────────────────────────────────────────────────────────────────
 MODEL_NAME     = "Salesforce/blip2-opt-2.7b"
 DEVICE         = "cuda" if torch.cuda.is_available() else "cpu"
 BATCH_SIZE     = 4
@@ -40,7 +30,6 @@ CHECKPOINT_DIRS = {
     "adapters" : Path("checkpoints/adapters"),
     "ia3"      : Path("checkpoints/ia3"),
 }
-METHODS = ["baseline", "lora", "adapters", "ia3"]
 RESULTS_DIR = Path("results")
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -59,18 +48,18 @@ class BottleneckAdapter(nn.Module):
 
 
 def inject_and_load_adapters(model, checkpoint_dir: Path):
-    """Rebuild the adapter structure and load saved weights."""
+    """Rebuild adapter structure and load saved weights."""
     meta_path = checkpoint_dir / "train_meta.json"
     if not meta_path.exists():
-        raise FileNotFoundError(f"adapter train_meta.json not found in {checkpoint_dir}")
+        raise FileNotFoundError(f"train_meta.json not found in {checkpoint_dir}")
 
     with open(meta_path) as f:
         meta = json.load(f)
 
-    cfg            = meta["config"]
-    hidden_size    = cfg["hidden_size"]
-    bottleneck_size= cfg["bottleneck_size"]
-    decoder_layers = model.language_model.model.decoder.layers
+    cfg             = meta["config"]
+    hidden_size     = cfg["hidden_size"]
+    bottleneck_size = cfg["bottleneck_size"]
+    decoder_layers  = model.language_model.model.decoder.layers
 
     adapters = nn.ModuleList()
     handles  = []
@@ -90,7 +79,6 @@ def inject_and_load_adapters(model, checkpoint_dir: Path):
     weights_path = checkpoint_dir / "adapter_weights.pt"
     adapters.load_state_dict(torch.load(weights_path, map_location=DEVICE))
 
-    # Freeze everything (eval only)
     for param in model.parameters():
         param.requires_grad = False
     for param in adapters.parameters():
@@ -102,53 +90,19 @@ def inject_and_load_adapters(model, checkpoint_dir: Path):
 
 # ── Model loading ─────────────────────────────────────────────────────────────
 def load_base_model():
+    """Load frozen BLIP-2 base model in 8-bit. No torch_dtype=float16 here —
+    vision encoder LayerNorms must stay float32 during eval."""
     bnb_config = BitsAndBytesConfig(load_in_8bit=True)
     model = Blip2ForConditionalGeneration.from_pretrained(
         MODEL_NAME,
         quantization_config=bnb_config,
         device_map="auto",
-        # No torch_dtype=float16 here — vision encoder LayerNorms must stay
-        # in float32 to match pixel_values dtype (prepare_model_for_kbit_training
-        # is not called during eval, so float16 would cause a dtype mismatch).
     )
     model.eval()
     return model
 
 
-def load_model_for_method(method: str):
-    """Load base model and apply the method's saved checkpoint."""
-    print(f"  Loading base model...")
-    processor = Blip2Processor.from_pretrained(MODEL_NAME)
-
-    hooks = []  # only used for adapters
-
-    if method == "baseline":
-        model = load_base_model()
-        print("  Frozen baseline (no fine-tuning)")
-
-    elif method in ("lora", "ia3"):
-        ckpt_dir = CHECKPOINT_DIRS[method]
-        base     = load_base_model()
-        model    = PeftModel.from_pretrained(base, str(ckpt_dir))
-        model.eval()
-        print(f"  Loaded PEFT weights from {ckpt_dir}/")
-
-    elif method == "adapters":
-        base             = load_base_model()
-        # prepare_model_for_kbit_training needed to match training setup
-        base             = prepare_model_for_kbit_training(base)
-        base.config.use_cache = False
-        _, hooks         = inject_and_load_adapters(base, CHECKPOINT_DIRS["adapters"])
-        model            = base
-        model.eval()
-
-    else:
-        raise ValueError(f"Unknown method: {method}")
-
-    return model, processor, hooks
-
-
-# ── Inference & scoring ───────────────────────────────────────────────────────
+# ── Answer normalisation & scoring ────────────────────────────────────────────
 def normalize_answer(ans: str) -> str:
     # Step 1: take first clause (split on punctuation)
     ans = re.split(r"[.,;\n]", ans)[0]
@@ -160,7 +114,6 @@ def normalize_answer(ans: str) -> str:
     if words and all(w == words[0] for w in words):
         ans = words[0]
     # Step 3: if answer starts with a number, take just the number
-    # e.g. "0 people are in the photo" → "0"
     if words and words[0].isdigit():
         ans = words[0]
     return ans
@@ -172,6 +125,7 @@ def vqa_score(prediction: str, ground_truth_answers: list) -> float:
     return min(count / 3, 1.0)
 
 
+# ── Inference ─────────────────────────────────────────────────────────────────
 def run_inference_batch(model, processor, batch):
     images  = [s["image"] for s in batch]
     prompts = [f"Question: {s['question']} Answer:" for s in batch]
@@ -193,8 +147,8 @@ def run_inference_batch(model, processor, batch):
             min_new_tokens=1,
             num_beams=5,
             length_penalty=1.0,
-            no_repeat_ngram_size=2,   # prevents "yes yes yes yes" repetition
-            repetition_penalty=1.5,   # penalises repeating any token
+            no_repeat_ngram_size=2,
+            repetition_penalty=1.5,
         )
 
     new_tokens = generated_ids[:, input_len:]
@@ -240,7 +194,23 @@ def evaluate(model, processor, val_dataset):
     }
 
 
-# ── Save / print ──────────────────────────────────────────────────────────────
+# ── Results helpers ───────────────────────────────────────────────────────────
+def results_exist(method: str) -> bool:
+    """Return True if result file already exists — skip re-evaluation."""
+    return (RESULTS_DIR / f"{method}_results.json").exists()
+
+
+def checkpoint_ready(method: str) -> bool:
+    """Return True if trained checkpoint files are present."""
+    if method == "baseline":
+        return True
+    ckpt = CHECKPOINT_DIRS[method]
+    if method == "adapters":
+        return (ckpt / "adapter_weights.pt").exists() and (ckpt / "train_meta.json").exists()
+    else:  # lora, ia3
+        return (ckpt / "adapter_config.json").exists()
+
+
 def save_results(method: str, metrics: dict):
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     path = RESULTS_DIR / f"{method}_results.json"
@@ -249,8 +219,12 @@ def save_results(method: str, metrics: dict):
     print(f"  Results saved → {path}")
 
 
+def get_val_dataset():
+    return VQAv2Dataset(get_fixed_val_subset()[:VAL_SIZE], split="val")
+
+
 def print_comparison_table():
-    """Print a summary table from all available result files."""
+    """Print summary table from all available result files."""
     all_methods = ["baseline", "lora", "adapters", "ia3"]
     rows = []
     for m in all_methods:
@@ -261,6 +235,7 @@ def print_comparison_table():
             rows.append((m, r["accuracy"], r["avg_time_ms"], r["num_samples"]))
 
     if not rows:
+        print("No results found yet. Run evaluate_*.py scripts first.")
         return
 
     print("\n" + "=" * 55)
@@ -271,73 +246,3 @@ def print_comparison_table():
     for method, acc, ms, n in rows:
         print(f"  {method:<12} {acc:>9.2f}%  {ms:>9.1f}ms  {n:>8}")
     print("=" * 55)
-
-
-# ── Main ──────────────────────────────────────────────────────────────────────
-def main():
-    # Determine which methods to evaluate
-    requested = sys.argv[1:] if len(sys.argv) > 1 else METHODS
-
-    # Filter to only methods whose checkpoint files are actually present
-    def checkpoint_ready(method):
-        if method == "baseline":
-            return True  # no checkpoint needed
-        ckpt = CHECKPOINT_DIRS[method]
-        if method == "adapters":
-            return (ckpt / "adapter_weights.pt").exists() and (ckpt / "train_meta.json").exists()
-        else:  # lora, ia3 — PEFT saves adapter_config.json
-            return (ckpt / "adapter_config.json").exists()
-
-    def results_exist(method):
-        return (RESULTS_DIR / f"{method}_results.json").exists()
-
-    to_run = []
-    for m in requested:
-        if not checkpoint_ready(m):
-            print(f"  [SKIP] {m} — checkpoint not ready (run {m}.py first)")
-        elif results_exist(m):
-            print(f"  [SKIP] {m} — results already exist (delete results/{m}_results.json to re-run)")
-        else:
-            to_run.append(m)
-
-    if not to_run:
-        print("No checkpoints found. Run the training scripts first.")
-        return
-
-    print(f"\nEvaluating: {to_run}")
-
-    # Load fixed val dataset once
-    val_dataset = VQAv2Dataset(get_fixed_val_subset()[:VAL_SIZE], split="val")
-    print(f"Val dataset: {len(val_dataset)} samples\n")
-
-    for method in to_run:
-        print("=" * 55)
-        print(f"  [{method.upper()}]")
-        print("=" * 55)
-
-        model, processor, hooks = load_model_for_method(method)
-
-        metrics = evaluate(model, processor, val_dataset)
-        print(f"  Accuracy    : {metrics['accuracy']:.2f}%")
-        print(f"  ms/sample   : {metrics['avg_time_ms']:.1f}")
-
-        save_results(method, metrics)
-
-        # Free GPU memory before loading next model
-        for h in hooks:
-            h.remove()
-        del model
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-
-        print()
-
-    print_comparison_table()
-
-
-if __name__ == "__main__":
-    if torch.cuda.is_available():
-        print(f"GPU: {torch.cuda.get_device_name(0)}")
-    else:
-        print("WARNING: CUDA not found — running on CPU (will be very slow).")
-    main()

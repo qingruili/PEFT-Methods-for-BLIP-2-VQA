@@ -7,3 +7,13 @@ venv\Scripts\python.exe adapters.py
 venv\Scripts\python.exe ia3.py
 
 venv\Scripts\python.exe evaluate.py
+
+
+# After each training finishes, run its evaluate separately:
+python evaluate_baseline.py    # ~3 min, runs once ever
+python evaluate_lora.py        # ~3 min, after lora.py finishes
+python evaluate_adapters.py    # ~3 min, after adapters.py finishes
+python evaluate_ia3.py         # ~3 min, after ia3.py finishes
+
+# See comparison table anytime:
+python compare.py
