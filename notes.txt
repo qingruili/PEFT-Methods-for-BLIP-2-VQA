@@ -17,3 +17,21 @@ python evaluate_ia3.py         # ~3 min, after ia3.py finishes
 
 # See comparison table anytime:
 python compare.py
+
+
+lora: 30000
+RAM usage: 0.36GB
+GPU VRAM used: 3.95GB
+trainable params: 2,621,440 || all params: 3,747,383,296 || trainable%: 0.0700
+epoch1: loss = 0.5154, time = 13485.2s
+epoch2: loss = 0.4487, time = 13360.6s
+epoch3: loss = 0.4373, time = 13378.6s
+
+adapters: 30000
+RAM usage: 0.36GB
+GPU VRAM used: 3.95GB
+Adapter layers: 32 (hidden = 3560, bottleneck = 64)
+Trainable params: 10.7336M (0.2858% of total)
+epoch1: loss = 0.4763, time = 13574.2s
+epoch2: loss = 0.4283, time = 13397.6s
+epoch3: loss = 0.3978, time = 13396.0s

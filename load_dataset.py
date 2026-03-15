@@ -36,8 +36,8 @@ FIXED_TRAIN_PATH = BASE_DIR / "fixed_train_subset.json"
 FIXED_VAL_PATH   = BASE_DIR / "fixed_val_subset.json"
 
 # ── Config ────────────────────────────────────────────────────────────────────
-TRAIN_SIZE = 50000  # fixed train subset size shared across all PEFT experiments
-VAL_SIZE   = 50
+TRAIN_SIZE = 30000  # fixed train subset size shared across all PEFT experiments
+VAL_SIZE   = 3000   # fixed val subset size shared across all PEFT experiments
 SEED       = 42
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -85,7 +85,7 @@ def get_image_path(image_id: int, split: str) -> Path:
 # ── Fixed subset helpers ───────────────────────────────────────────────────────
 def get_fixed_val_subset() -> list[dict]:
     """
-    Return the fixed 50-sample val subset used by ALL experiments.
+    Return the fixed 30000-sample val subset used by ALL experiments.
     Creates and saves fixed_val_subset.json on first call,
     then loads from it on every subsequent call — guaranteeing all
     experiments (baseline, LoRA, Adapters, IA3) test on the same images.

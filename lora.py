@@ -27,7 +27,7 @@ from load_dataset import VQAv2Dataset, get_fixed_train_subset
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-TRAIN_SIZE  = 50000
+TRAIN_SIZE  = 30000
 BATCH_SIZE  = 2       # safe limit for 8GB VRAM with BLIP-2 8-bit
 NUM_EPOCHS  = 3
 LR          = 1e-4
@@ -72,7 +72,8 @@ def load_lora_from_checkpoint(model, epoch):
 
 def make_batch_inputs(batch, processor):
     images     = [s["image"]    for s in batch]
-    full_texts = [f"Question: {s['question']} Answer: {s['answer']}" for s in batch]
+    eos = processor.tokenizer.eos_token or ""
+    full_texts = [f"Question: {s['question']} Answer: {s['answer']}{eos}" for s in batch]
     prompts    = [f"Question: {s['question']} Answer:" for s in batch]
 
     inputs = processor(

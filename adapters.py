@@ -32,11 +32,11 @@ from load_dataset import VQAv2Dataset, get_fixed_train_subset
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-TRAIN_SIZE      = 50000
+TRAIN_SIZE      = 30000
 BATCH_SIZE      = 2       # safe limit for 8GB VRAM with BLIP-2 8-bit
 NUM_EPOCHS      = 3
-LR              = 1e-3    # adapters use a higher lr than LoRA
-BOTTLENECK_SIZE = 64
+LR              = 1e-4    # same as LoRA — 1e-3 caused adapter drift and degraded outputs
+BOTTLENECK_SIZE = 128   # increased from 64 — more capacity to learn EOS stopping
 GRADIENT_ACCUMULATION_STEPS = 4   # effective batch = BATCH_SIZE * GRAD_ACCUM = 8
 
 CHECKPOINT_DIR  = Path("checkpoints/adapters")
@@ -106,7 +106,8 @@ def inject_adapters(model):
 
 def make_batch_inputs(batch, processor):
     images     = [s["image"]    for s in batch]
-    full_texts = [f"Question: {s['question']} Answer: {s['answer']}" for s in batch]
+    eos = processor.tokenizer.eos_token or ""
+    full_texts = [f"Question: {s['question']} Answer: {s['answer']}{eos}" for s in batch]
     prompts    = [f"Question: {s['question']} Answer:" for s in batch]
 
     inputs = processor(
@@ -134,7 +135,7 @@ def make_batch_inputs(batch, processor):
     return inputs
 
 
-def train_one_epoch(model, processor, loader, optimizer):
+def train_one_epoch(model, adapters, processor, loader, optimizer):
     model.train()
     total_loss = 0.0
     optimizer.zero_grad()
@@ -145,11 +146,13 @@ def train_one_epoch(model, processor, loader, optimizer):
         total_loss += loss.item() * GRADIENT_ACCUMULATION_STEPS
 
         if (step + 1) % GRADIENT_ACCUMULATION_STEPS == 0:
+            torch.nn.utils.clip_grad_norm_(adapters.parameters(), max_norm=1.0)
             optimizer.step()
             optimizer.zero_grad()
 
     # Handle any remaining steps not divisible by GRADIENT_ACCUMULATION_STEPS
     if (len(loader) % GRADIENT_ACCUMULATION_STEPS) != 0:
+        torch.nn.utils.clip_grad_norm_(adapters.parameters(), max_norm=1.0)
         optimizer.step()
         optimizer.zero_grad()
 
@@ -232,7 +235,7 @@ def main():
 
     for epoch in range(resume_epoch + 1, NUM_EPOCHS + 1):
         t0      = time.perf_counter()
-        loss    = train_one_epoch(model, processor, train_loader, optimizer)
+        loss    = train_one_epoch(model, adapters, processor, train_loader, optimizer)
         elapsed = time.perf_counter() - t0
         epoch_losses.append(round(loss, 4))
         print(f"  Epoch {epoch}/{NUM_EPOCHS}  loss={loss:.4f}  time={elapsed:.1f}s")

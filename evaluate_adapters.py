@@ -17,6 +17,7 @@ from eval_utils import (
     MODEL_NAME, CHECKPOINT_DIRS, load_base_model, get_val_dataset,
     inject_and_load_adapters, evaluate, save_results,
     results_exist, checkpoint_ready, print_comparison_table,
+    sample_evaluate,
 )
 
 METHOD = "adapters"
@@ -54,16 +55,17 @@ def main():
     val_dataset = get_val_dataset()
     print(f"  {len(val_dataset)} samples")
 
-    print("\n[3] Running inference...")
+    #print("\n[3] Sample check (5 examples)...")
+    #sample_evaluate(model, processor, val_dataset, n=5)
+
+    # ── Full evaluation — uncomment when ready for the real run ───────────────
+    print("\n[4] Running full inference...")
     metrics = evaluate(model, processor, val_dataset)
     print(f"\n  Accuracy  : {metrics['accuracy']:.2f}%")
     print(f"  ms/sample : {metrics['avg_time_ms']:.1f}")
-
     save_results(METHOD, metrics)
-
     for h in hooks:
         h.remove()
-
     print_comparison_table()
 
 

@@ -31,9 +31,9 @@ from load_dataset import VQAv2Dataset, get_fixed_val_subset
 # ── Config ────────────────────────────────────────────────────────────────────
 MODEL_NAME     = "Salesforce/blip2-opt-2.7b"
 DEVICE         = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE     = 4
-MAX_NEW_TOKENS = 10
-VAL_SIZE       = 50
+BATCH_SIZE     = 8
+MAX_NEW_TOKENS = 5
+VAL_SIZE       = 3000
 
 CHECKPOINT_DIRS = {
     "lora"     : Path("checkpoints/lora"),
@@ -152,16 +152,23 @@ def load_model_for_method(method: str):
 def normalize_answer(ans: str) -> str:
     # Step 1: take first clause (split on punctuation)
     ans = re.split(r"[.,;\n]", ans)[0]
+    # Step 1b: split on CamelCase boundary — "yesThe man in" → "yes"
+    # happens when model pastes answer + next sentence without space/punctuation
+    ans = re.split(r"(?<=[a-z])(?=[A-Z])", ans)[0]
     ans = ans.lower().strip()
     ans = re.sub(r"[^\w\s]", "", ans)
     ans = re.sub(r"\s+", " ", ans).strip()
-    # Step 2: handle word repetition — "yes yes yes yes" → "yes"
     words = ans.split()
+    # Step 2: handle word repetition — "yes yes yes yes" → "yes"
     if words and all(w == words[0] for w in words):
         ans = words[0]
+        words = [ans]
     # Step 3: if answer starts with a number, take just the number
     # e.g. "0 people are in the photo" → "0"
     if words and words[0].isdigit():
+        ans = words[0]
+    # Step 4: yes/no with trailing filler — "yes it is" → "yes"
+    if words and words[0] in ("yes", "no") and len(words) > 1:
         ans = words[0]
     return ans
 
@@ -191,10 +198,9 @@ def run_inference_batch(model, processor, batch):
             **inputs,
             max_new_tokens=MAX_NEW_TOKENS,
             min_new_tokens=1,
-            num_beams=5,
-            length_penalty=1.0,
-            no_repeat_ngram_size=2,   # prevents "yes yes yes yes" repetition
-            repetition_penalty=1.5,   # penalises repeating any token
+            do_sample=False,          # greedy decoding — 5x faster than beam search
+            no_repeat_ngram_size=2,
+            repetition_penalty=1.5,
         )
 
     new_tokens = generated_ids[:, input_len:]
