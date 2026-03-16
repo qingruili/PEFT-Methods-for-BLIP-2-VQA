@@ -43,3 +43,12 @@ trainable params: 731,136 || all params: 3,747,383,296 || trainable%: 0.0195
 epoch1: loss = 0.5714, time = 13312.0s
 epoch2: loss = 0.4397, time = 13257.1s
 epoch3: loss = 0.4235, time = 13270.7s
+
+
+
+No - norm
+  Raw accuracy (no norm) : 30.40%
+  ms/sample              : 2268.7
+
+  Normalised accuracy    : 40.29%
+  Normalisation gain     : +9.89pp

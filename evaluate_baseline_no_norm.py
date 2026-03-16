@@ -63,10 +63,13 @@ def evaluate_no_norm(model, processor, val_dataset):
         questions = [s["question"] for s in batch]
         prompts   = [f"Question: {q} Answer:" for q in questions]
 
+        processor.tokenizer.padding_side = "left"   # required for OPT decoder batching
         inputs = processor(
             images=images, text=prompts,
             return_tensors="pt", padding=True
         ).to(DEVICE)
+
+        input_len = inputs["input_ids"].shape[1]
 
         t0 = time.perf_counter()
         with torch.no_grad():
@@ -80,10 +83,17 @@ def evaluate_no_norm(model, processor, val_dataset):
             )
         total_time += time.perf_counter() - t0
 
-        input_len  = inputs["input_ids"].shape[1]
         new_tokens = generated_ids[:, input_len:]
         preds      = processor.batch_decode(new_tokens, skip_special_tokens=True)
         preds      = [p.strip() for p in preds]
+
+        # ── Debug: print first batch raw outputs so you can verify ────────────
+        if len(results) == 0:
+            print("\n  [DEBUG] First batch raw predictions (before saving):")
+            for dbg_q, dbg_p in zip(questions[:3], preds[:3]):
+                print(f"    Q: {dbg_q}")
+                print(f"    A: {dbg_p!r}")
+                print()
 
         for i, s in enumerate(batch):
             raw_pred = preds[i]
