@@ -23,10 +23,7 @@ MODEL_NAME     = "Salesforce/blip2-opt-2.7b"
 DEVICE         = "cuda" if torch.cuda.is_available() else "cpu"
 BATCH_SIZE     = 8     # safe for 8-bit BLIP-2 + ViT images in VRAM
 MAX_NEW_TOKENS = 5     # VQA answers are 1-2 words; 5 tokens is plenty
-VAL_SIZE       = 3000   # ← recommended for 30k training (~40 min/method, ~2.7 hrs total)
-# VAL_SIZE     = 500   # ← faster (~20 min/method, ~1.5 hrs total)
-# VAL_SIZE     = 3000  # ← ~2 hrs per method
-# VAL_SIZE     = 100   # ← quick sanity check only
+VAL_SIZE       = 3000   
 
 CHECKPOINT_DIRS = {
     "lora"     : Path("checkpoints/lora"),
