@@ -1,7 +1,13 @@
 """
 LoRA fine-tuning of BLIP-2 (OPT-2.7B) on VQA v2.
 Trains and saves adapter weights to checkpoints/lora/.
-Run evaluate.py separately to test the saved model.
+
+Usage:
+  python train_lora.py
+
+Config:
+  r=8, alpha=16, dropout=0.05, target=[q_proj, v_proj]
+  30 000 samples, 3 epochs, lr=1e-4, effective batch=8
 """
 
 import json
@@ -21,12 +27,11 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
-from load_model import load_model, load_processor, DEVICE
-from load_dataset import VQAv2Dataset, get_fixed_train_subset
+from src.model import load_model, load_processor, DEVICE
+from src.dataset import VQAv2Dataset, get_fixed_train_subset
 
 
 # ── Config ────────────────────────────────────────────────────────────────────
-
 TRAIN_SIZE  = 30000
 BATCH_SIZE  = 2       # safe limit for 8GB VRAM with BLIP-2 8-bit
 NUM_EPOCHS  = 3
@@ -64,25 +69,19 @@ def apply_lora(model):
 
 
 def load_lora_from_checkpoint(model, epoch):
-    """Load LoRA weights from a saved epoch checkpoint."""
     epoch_dir = CHECKPOINT_DIR / f"epoch_{epoch}"
-    model = PeftModel.from_pretrained(model, str(epoch_dir), is_trainable=True)
-    return model
+    return PeftModel.from_pretrained(model, str(epoch_dir), is_trainable=True)
 
 
 def make_batch_inputs(batch, processor):
-    images     = [s["image"]    for s in batch]
-    eos = processor.tokenizer.eos_token or ""
+    images     = [s["image"] for s in batch]
+    eos        = processor.tokenizer.eos_token or ""
     full_texts = [f"Question: {s['question']} Answer: {s['answer']}{eos}" for s in batch]
     prompts    = [f"Question: {s['question']} Answer:" for s in batch]
 
     inputs = processor(
-        images=images,
-        text=full_texts,
-        return_tensors="pt",
-        padding=True,
-        truncation=True,
-        max_length=512,
+        images=images, text=full_texts,
+        return_tensors="pt", padding=True, truncation=True, max_length=512,
     ).to(DEVICE)
 
     prompt_enc  = processor.tokenizer(prompts, padding=False, truncation=True, max_length=512)
@@ -91,12 +90,8 @@ def make_batch_inputs(batch, processor):
     labels = inputs["input_ids"].clone()
     for i, plen in enumerate(prompt_lens):
         labels[i, :plen] = -100
-    # Use attention_mask (not pad_token_id) to find padding.
-    # OPT has eos_token_id == pad_token_id (both = 2), so masking by
-    # pad_token_id would accidentally mask the EOS token too — the model
-    # would never learn to stop generating.
+    # OPT: eos_token_id == pad_token_id (both=2), mask by attention_mask not pad id
     labels[inputs["attention_mask"] == 0] = -100
-
     inputs["labels"] = labels
     return inputs
 
@@ -118,7 +113,6 @@ def train_one_epoch(model, processor, loader, optimizer):
             optimizer.step()
             optimizer.zero_grad()
 
-    # Handle any remaining steps not divisible by GRADIENT_ACCUMULATION_STEPS
     if (len(loader) % GRADIENT_ACCUMULATION_STEPS) != 0:
         torch.nn.utils.clip_grad_norm_(
             filter(lambda p: p.requires_grad, model.parameters()), max_norm=1.0
@@ -145,7 +139,6 @@ def _build_meta(epoch_losses):
 
 
 def save_epoch_checkpoint(model, processor, epoch, epoch_losses):
-    """Save checkpoint after each epoch for crash recovery."""
     epoch_dir = CHECKPOINT_DIR / f"epoch_{epoch}"
     epoch_dir.mkdir(parents=True, exist_ok=True)
     model.save_pretrained(str(epoch_dir))
@@ -158,13 +151,11 @@ def save_epoch_checkpoint(model, processor, epoch, epoch_losses):
 
 
 def save_checkpoint(model, processor, epoch_losses):
-    """Save final checkpoint to the main directory (used by evaluate.py)."""
     CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
     model.save_pretrained(str(CHECKPOINT_DIR))
     processor.save_pretrained(str(CHECKPOINT_DIR))
-    meta = _build_meta(epoch_losses)
     with open(CHECKPOINT_DIR / "train_meta.json", "w") as f:
-        json.dump(meta, f, indent=2)
+        json.dump(_build_meta(epoch_losses), f, indent=2)
     print(f"  Final checkpoint → {CHECKPOINT_DIR}/")
 
 
@@ -176,7 +167,6 @@ def main():
     print(f"  grad_accum={GRADIENT_ACCUMULATION_STEPS}  effective_batch={BATCH_SIZE * GRADIENT_ACCUMULATION_STEPS}")
     print(f"  r={LORA_R}  alpha={LORA_ALPHA}  target={LORA_TARGET_MODULES}")
 
-    # ── Check for existing epoch checkpoints to resume from ──────────────────
     resume_epoch = find_resume_epoch()
     if resume_epoch > 0:
         print(f"\n  [Resume] Found checkpoint at epoch {resume_epoch} — resuming from epoch {resume_epoch + 1}")

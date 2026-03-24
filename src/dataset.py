@@ -1,5 +1,5 @@
 """
-Step 2: Load and verify the VQA v2 dataset from local files.
+Load and verify the VQA v2 dataset from local files.
 
 Data structure expected:
   Data/
@@ -22,7 +22,7 @@ from torch.utils.data import Dataset, DataLoader
 
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-BASE_DIR   = Path(__file__).parent / "Data"
+BASE_DIR   = Path(__file__).parent.parent / "Data"   # project_root/Data
 
 TRAIN_QUESTIONS  = BASE_DIR / "questions"   / "v2_OpenEnded_mscoco_train2014_questions.json"
 VAL_QUESTIONS    = BASE_DIR / "questions"   / "v2_OpenEnded_mscoco_val2014_questions.json"
@@ -85,7 +85,7 @@ def get_image_path(image_id: int, split: str) -> Path:
 # ── Fixed subset helpers ───────────────────────────────────────────────────────
 def get_fixed_val_subset() -> list[dict]:
     """
-    Return the fixed 30000-sample val subset used by ALL experiments.
+    Return the fixed 3000-sample val subset used by ALL experiments.
     Creates and saves fixed_val_subset.json on first call,
     then loads from it on every subsequent call — guaranteeing all
     experiments (baseline, LoRA, Adapters, IA3) test on the same images.
@@ -110,7 +110,7 @@ def get_fixed_val_subset() -> list[dict]:
 
 def get_fixed_train_subset() -> list[dict]:
     """
-    Return the fixed 100-sample train subset used by ALL PEFT experiments.
+    Return the fixed 30000-sample train subset used by ALL PEFT experiments.
     Creates and saves fixed_train_subset.json on first call.
     """
     if FIXED_TRAIN_PATH.exists():
@@ -153,69 +153,3 @@ class VQAv2Dataset(Dataset):
             "image_id"               : sample["image_id"],
             "answer_type"            : sample["answer_type"],
         }
-
-
-def inspect_sample(dataset: VQAv2Dataset, idx: int = 0):
-    sample = dataset[idx]
-    print(f"\n── Sample #{idx} ──────────────────────────────────────")
-    print(f"  question_id : {sample['question_id']}")
-    print(f"  image_id    : {sample['image_id']}")
-    print(f"  question    : {sample['question']}")
-    print(f"  answer (MC) : {sample['answer']}")
-    print(f"  all answers : {sample['answers']}")
-    print(f"  answer_type : {sample['answer_type']}")
-    img = sample["image"]
-    assert isinstance(img, Image.Image), "Image is not a PIL Image!"
-    print(f"  image size  : {img.size}  mode: {img.mode}")
-    print("  [OK] Image loaded successfully as PIL.Image")
-
-
-def main():
-    import random
-    random.seed(SEED)
-
-    print("=" * 55)
-    print("  VQA v2 — Local Dataset Loader")
-    print("=" * 55)
-
-    # ── Build full sample lists ──────────────────────────────
-    print("\n[1] Building train samples...")
-    train_samples = build_samples(TRAIN_QUESTIONS, TRAIN_ANNOTATIONS)
-    print(f"    Total train samples: {len(train_samples):,}")
-
-    print("\n[2] Building val samples...")
-    val_samples = build_samples(VAL_QUESTIONS, VAL_ANNOTATIONS)
-    print(f"    Total val samples  : {len(val_samples):,}")
-
-    # ── Shuffle and take subsets ─────────────────────────────
-    random.shuffle(train_samples)
-    random.shuffle(val_samples)
-    train_subset = train_samples[:TRAIN_SIZE]
-    val_subset   = val_samples[:VAL_SIZE]
-
-    print(f"\n[3] Trial subsets → train: {len(train_subset)} | val: {len(val_subset)}")
-
-    # ── Wrap in Dataset ──────────────────────────────────────
-    train_dataset = VQAv2Dataset(train_subset, split="train")
-    val_dataset   = VQAv2Dataset(val_subset,   split="val")
-
-    # ── Inspect samples ──────────────────────────────────────
-    print("\n[4] Inspecting samples...")
-    inspect_sample(train_dataset, idx=0)
-    inspect_sample(val_dataset,   idx=0)
-
-    # ── Quick DataLoader test ────────────────────────────────
-    print("\n[5] Testing DataLoader (batch_size=4)...")
-    loader = DataLoader(train_dataset, batch_size=4, shuffle=True,
-                        collate_fn=lambda x: x)   # keep as list (images vary in size)
-    batch = next(iter(loader))
-    print(f"    Batch size : {len(batch)}")
-    print(f"    Fields     : {list(batch[0].keys())}")
-    print("    [OK] DataLoader works correctly")
-
-    print("\n[DONE] Dataset loaded and verified successfully.")
-    return train_dataset, val_dataset
-
-
-if __name__ == "__main__":
-    main()

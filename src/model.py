@@ -1,9 +1,9 @@
 """
-Step 3: Load BLIP-2 (OPT-2.7B) model and processor from HuggingFace.
+Load BLIP-2 (OPT-2.7B) model and processor from HuggingFace.
 
 - Loads Blip2Processor (handles image preprocessing + text tokenization)
 - Loads Blip2ForConditionalGeneration in 8-bit (GPU) or float32 (CPU)
-  * 8-bit via bitsandbytes keeps VRAM ~4-5 GB (safe for 8 GB cards)
+  * 8-bit via bitsandbytes keeps VRAM ~4 GB (safe for 8 GB cards)
   * float16 would need ~7 GB — too tight for training headroom
 - Logs total/trainable parameters and memory usage
 - Runs a single sanity-check inference
@@ -87,19 +87,10 @@ def log_parameter_counts(model):
     print(f"  Frozen parameters    : {total_m - trainable_m:>10.2f} M")
 
 
-def log_model_components(model):
-    print(f"\n── Model Components ───────────────────────────────────")
-    for name, child in model.named_children():
-        params = sum(p.numel() for p in child.parameters()) / 1e6
-        print(f"  {name:<30} {params:>8.2f} M params")
-
-
 def sanity_check_inference(model, processor):
     """Run a single forward pass to verify the model works end-to-end."""
     print(f"\n── Sanity Check Inference ─────────────────────────────")
-
-    # Create a dummy image (solid colour) to avoid needing a real image here
-    dummy_image  = Image.new("RGB", (224, 224), color=(128, 128, 128))
+    dummy_image    = Image.new("RGB", (224, 224), color=(128, 128, 128))
     dummy_question = "What color is this image?"
 
     inputs = processor(
@@ -108,14 +99,8 @@ def sanity_check_inference(model, processor):
         return_tensors="pt",
     ).to(DEVICE)
 
-    print(f"  Input pixel_values shape : {inputs['pixel_values'].shape}")
-    print(f"  Input ids shape          : {inputs['input_ids'].shape}")
-
     with torch.no_grad():
-        generated_ids = model.generate(
-            **inputs,
-            max_new_tokens=10,
-        )
+        generated_ids = model.generate(**inputs, max_new_tokens=10)
 
     answer = processor.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
     print(f"  Question : {dummy_question}")
@@ -123,29 +108,11 @@ def sanity_check_inference(model, processor):
     print("  [OK] Inference completed successfully")
 
 
-def main():
-    print("=" * 55)
-    print("  BLIP-2 (OPT-2.7B) — Model Loader")
-    print("=" * 55)
-
-    mode = "8-bit quantized" if LOAD_IN_8BIT else "float32"
-    print(f"\n[1] Device setup: {DEVICE.upper()}  |  mode: {mode}")
-
-    print("\n[2] Loading processor...")
-    processor = load_processor()
-
-    print("\n[3] Loading model...")
-    model = load_model()
-
-    log_parameter_counts(model)
-    log_model_components(model)
-
-    print("\n[4] Running sanity check...")
-    sanity_check_inference(model, processor)
-
-    print("\n[DONE] Model and processor loaded and verified successfully.")
-    return model, processor
-
-
 if __name__ == "__main__":
-    model, processor = main()
+    print("=" * 55)
+    print("  BLIP-2 (OPT-2.7B) — Model Loader (sanity check)")
+    print("=" * 55)
+    processor = load_processor()
+    model     = load_model()
+    log_parameter_counts(model)
+    sanity_check_inference(model, processor)

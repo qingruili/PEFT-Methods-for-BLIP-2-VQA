@@ -1,6 +1,6 @@
 """
-Shared utilities for all evaluate_*.py scripts.
-Handles model loading, inference, scoring, and result I/O.
+Shared utilities for evaluate.py and train scripts.
+Handles model loading, inference, answer normalisation, scoring, and result I/O.
 """
 
 import json
@@ -15,7 +15,7 @@ from tqdm import tqdm
 from transformers import Blip2Processor, Blip2ForConditionalGeneration, BitsAndBytesConfig
 from peft import PeftModel, prepare_model_for_kbit_training
 
-from load_dataset import VQAv2Dataset, get_fixed_val_subset
+from src.dataset import VQAv2Dataset, get_fixed_val_subset
 
 
 # ── Constants ─────────────────────────────────────────────────────────────────
@@ -23,7 +23,7 @@ MODEL_NAME     = "Salesforce/blip2-opt-2.7b"
 DEVICE         = "cuda" if torch.cuda.is_available() else "cpu"
 BATCH_SIZE     = 8     # safe for 8-bit BLIP-2 + ViT images in VRAM
 MAX_NEW_TOKENS = 5     # VQA answers are 1-2 words; 5 tokens is plenty
-VAL_SIZE       = 3000   
+VAL_SIZE       = 3000
 
 CHECKPOINT_DIRS = {
     "lora"     : Path("checkpoints/lora"),
@@ -34,7 +34,7 @@ RESULTS_DIR = Path("results")
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-# ── BottleneckAdapter (mirrors adapters.py — needed to load adapter weights) ──
+# ── BottleneckAdapter (mirrors train_adapters.py — needed to load weights) ────
 class BottleneckAdapter(nn.Module):
     def __init__(self, hidden_size: int, bottleneck_size: int):
         super().__init__()
@@ -90,8 +90,7 @@ def inject_and_load_adapters(model, checkpoint_dir: Path):
 
 # ── Model loading ─────────────────────────────────────────────────────────────
 def load_base_model():
-    """Load frozen BLIP-2 base model in 8-bit. No torch_dtype=float16 here —
-    vision encoder LayerNorms must stay float32 during eval."""
+    """Load frozen BLIP-2 base model in 8-bit."""
     bnb_config = BitsAndBytesConfig(load_in_8bit=True)
     model = Blip2ForConditionalGeneration.from_pretrained(
         MODEL_NAME,
@@ -107,22 +106,19 @@ def normalize_answer(ans: str) -> str:
     # Step 1: take first clause (split on punctuation)
     ans = re.split(r"[.,;\n]", ans)[0]
     # Step 1b: split on CamelCase boundary — "yesI'm not" → "yes"
-    # happens when model pastes answer + next sentence without a space/punctuation
     ans = re.split(r"(?<=[a-z])(?=[A-Z])", ans)[0]
     ans = ans.lower().strip()
     ans = re.sub(r"[^\w\s]", "", ans)
     ans = re.sub(r"\s+", " ", ans).strip()
     words = ans.split()
-    # Step 2: handle word repetition — "yes yes yes yes" → "yes"
+    # Step 2: collapse word repetition — "yes yes yes yes" → "yes"
     if words and all(w == words[0] for w in words):
         ans = words[0]
         words = [ans]
     # Step 3: if answer starts with a number, take just the number
     if words and words[0].isdigit():
         ans = words[0]
-    # Step 4: yes/no with trailing filler — "yes it is" → "yes",
-    #         "no cloud cover here today" → "no"
-    #         (yes/no are always single-token VQA answers)
+    # Step 4: yes/no with trailing filler — "yes it is" → "yes"
     if words and words[0] in ("yes", "no") and len(words) > 1:
         ans = words[0]
     return ans
@@ -139,6 +135,7 @@ def run_inference_batch(model, processor, batch):
     images  = [s["image"] for s in batch]
     prompts = [f"Question: {s['question']} Answer:" for s in batch]
 
+    # Left-padding required for OPT (decoder-only) batched generation
     processor.tokenizer.padding_side = "left"
     inputs = processor(
         images=images,
@@ -202,49 +199,12 @@ def evaluate(model, processor, val_dataset):
     }
 
 
-# ── Sample evaluation (sanity check before full run) ──────────────────────────
-def sample_evaluate(model, processor, val_dataset, n: int = 5):
-    """
-    Run inference on the first N samples and print a detailed per-sample table.
-    Use this to visually verify the model is producing reasonable answers
-    before committing to a full 30 000-sample evaluation.
-    """
-    samples = [val_dataset[i] for i in range(min(n, len(val_dataset)))]
-    preds   = run_inference_batch(model, processor, samples)
-
-    print("\n" + "=" * 72)
-    print(f"  Sample Evaluation ({n} samples)")
-    print("=" * 72)
-
-    total_score = 0.0
-    for i, (sample, pred) in enumerate(zip(samples, preds)):
-        score    = vqa_score(pred, sample["answers"])
-        norm_p   = normalize_answer(pred)
-        norm_gt  = normalize_answer(sample["answer"])
-        total_score += score
-
-        status = "✓" if score > 0 else "✗"
-        print(f"\n  [{i+1}] {status}  score={score:.2f}")
-        print(f"       Q  : {sample['question']}")
-        print(f"       Raw pred  : {pred!r}")
-        print(f"       Norm pred : {norm_p!r}")
-        print(f"       GT answer : {norm_gt!r}")
-        print(f"       All GT    : {[normalize_answer(a) for a in sample['answers']]}")
-
-    avg = total_score / len(samples) * 100
-    print("\n" + "-" * 72)
-    print(f"  Sample accuracy: {avg:.1f}%  ({int(total_score)}/{len(samples)} correct)")
-    print("=" * 72 + "\n")
-
-
 # ── Results helpers ───────────────────────────────────────────────────────────
 def results_exist(method: str) -> bool:
-    """Return True if result file already exists — skip re-evaluation."""
     return (RESULTS_DIR / f"{method}_results.json").exists()
 
 
 def checkpoint_ready(method: str) -> bool:
-    """Return True if trained checkpoint files are present."""
     if method == "baseline":
         return True
     ckpt = CHECKPOINT_DIRS[method]
@@ -278,7 +238,7 @@ def print_comparison_table():
             rows.append((m, r["accuracy"], r["avg_time_ms"], r["num_samples"]))
 
     if not rows:
-        print("No results found yet. Run evaluate_*.py scripts first.")
+        print("No results found. Run evaluate.py first.")
         return
 
     print("\n" + "=" * 55)
