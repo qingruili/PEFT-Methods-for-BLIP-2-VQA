@@ -90,14 +90,17 @@ Cmpt728/
 │   ├── model.py                   # BLIP-2 model + processor loader (8-bit)
 │   └── eval_utils.py              # Inference, answer normalisation, VQA scoring, I/O
 │
-├── train_lora.py                  # Train LoRA — saves to checkpoints/lora/
-├── train_adapters.py              # Train Bottleneck Adapters — saves to checkpoints/adapters/
-├── train_ia3.py                   # Train IA³ — saves to checkpoints/ia3/
+├── train/ 
+│   ├── train_lora.py                  # Train LoRA — saves to checkpoints/lora/
+│   ├── train_adapters.py              # Train Bottleneck Adapters — saves to checkpoints/adapters/
+│   ├── train_ia3.py                   # Train IA³ — saves to checkpoints/ia3/
 │
-├── evaluate.py                    # Evaluate any/all methods — saves to results/
-├── compare.py                     # Print comparison table from saved results
+├── eval/ 
+│   ├── evaluate.py                    # Evaluate any/all methods — saves to results/
+│   ├── compare.py                     # Print comparison table from saved results
 │
 ├── requirement.txt                # Python dependencies
+├── Cmpt728_Final_Project_Report.pdf                # Final Report
 ```
 
 ### How the modules relate
