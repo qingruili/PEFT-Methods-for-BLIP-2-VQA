@@ -126,16 +126,16 @@ pip install -r requirement.txt
 #    unzip Data/image/val2014.zip   -d Data/image/
 
 # 2. Train a method (pick one)
-python train_lora.py
-python train_adapters.py
-python train_ia3.py
+python train/train_lora.py
+python train/train_adapters.py
+python train/train_ia3.py
 
 # 3. Evaluate (runs all methods with checkpoints; skips if results already exist)
-python evaluate.py            # all methods
-python evaluate.py lora       # one method only
+python eval/evaluate.py            # all methods
+python eval/evaluate.py lora       # one method only
 
 # 4. Compare results
-python compare.py
+python eval/compare.py
 ```
 
 All three training scripts support **automatic resume** — if a run is interrupted, re-running the script picks up from the last completed epoch checkpoint.
