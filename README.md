@@ -1,4 +1,5 @@
-# CMPT 728 — PEFT Methods for BLIP-2 VQA
+# Step1: PEFT Methods for BLIP-2 VQA
+### [Link to Step 2](https://github.com/qingruili/Question-Type-Aware-VQA-Analysis)
 
 A systematic comparison of three Parameter-Efficient Fine-Tuning (PEFT) methods — **LoRA**, **Bottleneck Adapters**, and **IA³** — applied to [BLIP-2 (OPT-2.7B)](https://huggingface.co/Salesforce/blip2-opt-2.7b) for Visual Question Answering on the VQA v2 benchmark. All methods are trained under identical conditions and evaluated against a frozen baseline.
 
